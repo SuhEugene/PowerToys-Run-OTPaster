@@ -365,7 +365,7 @@ FodyWeavers.xsd
 .idea/
 
 # Release build outputs
-ClipboardManager*.zip
+OTPaster*.zip
 
 # Include dependecies
 !*/Libs/x64

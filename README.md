@@ -1,8 +1,8 @@
-# PowerToys Run: ClipboardManager plugin
+# PowerToys Run: OTPaster plugin
 
 Simple [PowerToys Run](https://learn.microsoft.com/windows/powertoys/run) plugin for easily searching and pasting the clipboard history.
 
-![ClipboardManager Demonstration](/images/ClipboardManager.gif)
+![OTPaster Demonstration](/images/OTPaster.gif)
 
 ## Requirements
 
@@ -11,7 +11,7 @@ Simple [PowerToys Run](https://learn.microsoft.com/windows/powertoys/run) plugin
 
 ## Installation
 
-- Download the [latest release](https://github.com/CoreyHayward/PowerToys-Run-ClipboardManager/releases/) by selecting the architecture that matches your machine: `x64` (more common) or `ARM64`
+- Download the [latest release](https://github.com/CoreyHayward/PowerToys-Run-OTPaster/releases/) by selecting the architecture that matches your machine: `x64` (more common) or `ARM64`
 - Close PowerToys
 - Extract the archive to `%LOCALAPPDATA%\Microsoft\PowerToys\PowerToys Run\Plugins`
 - Open PowerToys

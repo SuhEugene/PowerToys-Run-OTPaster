@@ -6,8 +6,8 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <RootNamespace>Community.PowerToys.Run.Plugin.ClipboardManager</RootNamespace>
-    <AssemblyName>Community.PowerToys.Run.Plugin.ClipboardManager</AssemblyName>
+    <RootNamespace>Community.PowerToys.Run.Plugin.OTPaster</RootNamespace>
+    <AssemblyName>Community.PowerToys.Run.Plugin.OTPaster</AssemblyName>
     <Version>0.3.0</Version>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
@@ -72,10 +72,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Update="Images\ClipboardManager.dark.png">
+    <None Update="Images\OTPaster.dark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Images\ClipboardManager.light.png">
+    <None Update="Images\OTPaster.light.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

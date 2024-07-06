@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34407.89
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Community.PowerToys.Run.Plugin.ClipboardManager", "Community.PowerToys.Run.Plugin.ClipboardManager\Community.PowerToys.Run.Plugin.ClipboardManager.csproj", "{31F5AF39-CBD7-4BA8-920D-1DCF39749B71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Community.PowerToys.Run.Plugin.OTPaster", "Community.PowerToys.Run.Plugin.OTPaster\Community.PowerToys.Run.Plugin.OTPaster.csproj", "{31F5AF39-CBD7-4BA8-920D-1DCF39749B71}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paster", "Paster\Paster.csproj", "{9D61896E-F12E-49B3-9EEE-4F56112B6964}"
 EndProject

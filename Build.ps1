@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-$projectDirectory = "$PSScriptRoot\Community.PowerToys.Run.Plugin.ClipboardManager"
-[xml]$xml = Get-Content -Path "$projectDirectory\Community.PowerToys.Run.Plugin.ClipboardManager.csproj"
+$projectDirectory = "$PSScriptRoot\Community.PowerToys.Run.Plugin.OTPaster"
+[xml]$xml = Get-Content -Path "$projectDirectory\Community.PowerToys.Run.Plugin.OTPaster.csproj"
 $version = $xml.Project.PropertyGroup.Version
 $version = "$version".Trim()
 
@@ -25,7 +25,7 @@ foreach ($platform in "ARM64", "x64")
     Remove-Item -Path "$projectDirectory\bin\*" -Recurse -Include *.xml, *.pdb, PowerToys.*, Wox.*
     New-Item -ItemType Directory -Force -Path $releaseDirectory\Paster
     Copy-Item -Path $pasterReleaseDirectory\* -Destination $releaseDirectory\Paster -Recurse
-    Rename-Item -Path $releaseDirectory -NewName "ClipboardManager"
+    Rename-Item -Path $releaseDirectory -NewName "OTPaster"
 
-    Compress-Archive -Path "$projectDirectory\bin\$platform\ClipboardManager" -DestinationPath "$PSScriptRoot\ClipboardManager-$version-$platform.zip"
+    Compress-Archive -Path "$projectDirectory\bin\$platform\OTPaster" -DestinationPath "$PSScriptRoot\OTPaster-$version-$platform.zip"
 }

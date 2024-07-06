@@ -12,7 +12,7 @@ using Wox.Infrastructure;
 using Wox.Plugin;
 using Clipboard = Windows.ApplicationModel.DataTransfer.Clipboard;
 
-namespace Community.PowerToys.Run.Plugin.ClipboardManager
+namespace Community.PowerToys.Run.Plugin.OTPaster
 {
     public class Main : IPlugin, ISettingProvider, IContextMenu
     {
@@ -21,7 +21,7 @@ namespace Community.PowerToys.Run.Plugin.ClipboardManager
         private int _beginTypeDelay;
         private string _pasterPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Paster", "Paster.exe");
 
-        public string Name => "ClipboardManager";
+        public string Name => "OTPaster";
 
         public string Description => "Searches the clipboard history and pastes the selected item.";
 
@@ -144,11 +144,11 @@ namespace Community.PowerToys.Run.Plugin.ClipboardManager
         {
             if (theme == Theme.Light || theme == Theme.HighContrastWhite)
             {
-                _iconPath = "Images/ClipboardManager.light.png";
+                _iconPath = "Images/OTPaster.light.png";
             }
             else
             {
-                _iconPath = "Images/ClipboardManager.dark.png";
+                _iconPath = "Images/OTPaster.dark.png";
             }
         }
 
