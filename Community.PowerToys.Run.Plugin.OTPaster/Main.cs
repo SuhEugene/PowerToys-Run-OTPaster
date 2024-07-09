@@ -4,28 +4,28 @@
 using ManagedCommon;
 using Microsoft.PowerToys.Settings.UI.Library;
 using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows.Input;
-using Windows.ApplicationModel.DataTransfer;
-using Wox.Infrastructure;
 using Wox.Plugin;
-using Clipboard = Windows.ApplicationModel.DataTransfer.Clipboard;
 
 namespace Community.PowerToys.Run.Plugin.OTPaster
 {
     public class Main : IPlugin, ISettingProvider, IContextMenu
     {
-        private PluginInitContext _context;
-        private string _iconPath;
+        private PluginInitContext? _context;
+        private string? _iconPath;
         private int _beginTypeDelay;
-        private string _pasterPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Paster", "Paster.exe");
-
+        private int _minRemainingTime;
         public string Name => "OTPaster";
+        public string Description => "Searches the OTP codes list and pastes the selected item.";
+        public static string PluginID => "2e5ef47a099efd00cba2f38bf01e5ddf";
 
-        public string Description => "Searches the clipboard history and pastes the selected item.";
-
-        public static string PluginID => "2d9351ea495848d98f4771c27ac211e4";
+        private class OTPAuthInfo
+        {
+            public required string Label { get; set; }
+            public required string Secret { get; set; }
+        }
 
         public IEnumerable<PluginAdditionalOption> AdditionalOptions => new List<PluginAdditionalOption>()
         {
@@ -33,8 +33,16 @@ namespace Community.PowerToys.Run.Plugin.OTPaster
             {
                 Key = "PasteDelay",
                 DisplayLabel = "Paste Delay (ms)",
-                DisplayDescription = "Sets how long in milliseconds to wait before paste occurs.",
+                DisplayDescription = "How long in milliseconds to wait before paste occurs.",
                 NumberValue = 200,
+                PluginOptionType = PluginAdditionalOption.AdditionalOptionType.Numberbox,
+            },
+            new PluginAdditionalOption()
+            {
+                Key = "MinRemainingTime",
+                DisplayLabel = "Minimal Remaining Time (s)",
+                DisplayDescription = "Any code that is valid for less than this amount of time will not be inserted. Instead, a new one will be waited for.",
+                NumberValue = 5,
                 PluginOptionType = PluginAdditionalOption.AdditionalOptionType.Numberbox,
             },
         };
@@ -51,85 +59,175 @@ namespace Community.PowerToys.Run.Plugin.OTPaster
         public List<Result> Query(Query query)
         {
             var results = new List<Result>();
-            var clipboardTextItems = GetTextItemsFromClipboardHistory();
-            if (!string.IsNullOrWhiteSpace(query?.Search))
+            var otpEntry = CheckQueryForOTP(query.Search.Trim());
+
+            if (otpEntry != null)
+                results.Add(CreateSaveOTPResult(otpEntry));
+
+            var otpAccountItems = GetOTPItemsFromStorage();
+            if (!string.IsNullOrWhiteSpace(query.Search))
             {
-                foreach (var item in clipboardTextItems)
-                {
-                    var text = RunSync(async () => await item.Content.GetTextAsync());
-                    if (text.Contains(query.Search, StringComparison.OrdinalIgnoreCase))
-                    {
-                        results.Add(CreateResult(item, text));
-                    }
-                }
+                foreach (var item in otpAccountItems)
+                    if (item.Label.Contains(query.Search, StringComparison.OrdinalIgnoreCase))
+                        results.Add(CreateResult(item));
             }
             else
             {
-                foreach (var item in clipboardTextItems.Take(5))
-                {
-                    var text = RunSync(async () => await item.Content.GetTextAsync());
-                    results.Add(CreateResult(item, text));
-                }
+                foreach (var item in otpAccountItems)
+                    results.Add(CreateResult(item));
             }
 
             return results;
         }
 
-        private List<ClipboardHistoryItem> GetTextItemsFromClipboardHistory()
+        private OTPAuthInfo? CheckQueryForOTP(string queryText)
         {
-            var clipboardHistoryResult = RunSync(async () => await Clipboard.GetHistoryItemsAsync());
-            var clipboardTextItems = clipboardHistoryResult.Items.Where(x => x.Content.Contains(StandardDataFormats.Text)).ToList();
-            return clipboardTextItems;
+            if (!queryText.StartsWith("otpauth://")) return null;
+
+            var otpAuthRegex = new Regex(@"otpauth:\/\/t?otp\/(?<label>[^?]+)?\?(?<query>[^)]+)", RegexOptions.IgnoreCase);
+            var match = otpAuthRegex.Match(queryText);
+
+            if (!match.Success) return null;
+
+            var query = match.Groups["query"].Value;
+
+            string? label = match.Groups["label"].Value;
+            string? secret = null;
+            string? issuer = null;
+
+            var queryRegex = new Regex(@"(?:&|^)(?<key>[^=]+)=(?<value>[^&]+)", RegexOptions.IgnoreCase);
+            var queryMatches = queryRegex.Matches(query);
+
+            foreach (Match queryMatch in queryMatches)
+            {
+                var key = queryMatch.Groups["key"].Value;
+                var value = queryMatch.Groups["value"].Value;
+
+                switch (key)
+                {
+                    case "issuer":
+                        issuer = value;
+                        break;
+                    case "secret":
+                        secret = value;
+                        break;
+                    case "algorithm":
+                        if (!value.Equals("SHA1", StringComparison.OrdinalIgnoreCase))
+                            return null;
+                        break;
+                    case "digits":
+                        if (int.TryParse(value, out var digits))
+                            if (digits != 6) return null;
+                        break;
+                    case "period":
+                        if (int.TryParse(value, out var period))
+                            if (period != 30) return null;
+                        break;
+                }
+            }
+            if (secret == null) return null;
+
+            return new OTPAuthInfo()
+            {
+                Label = issuer == null ? label : $"{issuer}: {label}",
+                Secret = secret
+            };
+
         }
 
-        private Result CreateResult(ClipboardHistoryItem item, string text) 
+        private Result CreateResult(OTPAuthInfo item)
             => new Result()
             {
-                Title = text.Trim(),
-                SubTitle = "Paste this value.",
+                Title = item.Label,
+                SubTitle = "Paste this account code.",
                 IcoPath = _iconPath,
                 Action = (context) =>
                 {
-                    Clipboard.SetHistoryItemAsContent(item);
+
+
                     Task.Run(() => RunAsSTAThread(() =>
                     {
+                        var timeLeft = TOTPGenerator.GetTimeLeft();
+                        if (_beginTypeDelay + _minRemainingTime > timeLeft)
+                            Thread.Sleep(timeLeft);
+
+                        Clipboard.SetText(TOTPGenerator.GenerateCode(item.Secret));
                         Thread.Sleep(_beginTypeDelay);
-                        SendKeys.SendWait("^(v)");
+                        SendKeys.SendWait("^v");
+                        MessageBox.Show($"Code is {TOTPGenerator.GenerateCode(item.Secret)}", "Inserted!");
                     }));
                     return true;
                 },
                 ContextData = item,
             };
 
-        [DllImport("User32.dll")]
-        static extern int SetForegroundWindow(IntPtr point);
+        private Result CreateSaveOTPResult(OTPAuthInfo authInfo)
+        {
+            return new Result()
+            {
+                Title = $"[+] {authInfo.Label}",
+                SubTitle = "Create OTP account",
+                IcoPath = _iconPath,
+                Action = (context) =>
+                {
+                    AddOTPItem(authInfo);
+                    return true;
+                },
+                ContextData = authInfo
+            };
+        }
 
-        [DllImport("User32.dll")]
-        static extern IntPtr GetForegroundWindow();
+        private void AddOTPItem(OTPAuthInfo item)
+        {
+            var items = GetOTPItemsFromStorage();
+            items.Add(item);
+            WriteOTPItemsToStorage(items);
+        }
+
+        private void RemoveOTPItem(OTPAuthInfo item)
+        {
+            var items = GetOTPItemsFromStorage();
+            var index = items.FindIndex(i => i.Label.Equals(item.Label) && i.Secret.Equals(item.Secret));
+            if (index == -1) return;
+            items.RemoveAt(index);
+            WriteOTPItemsToStorage(items);
+        }
+
+        private void WriteOTPItemsToStorage(List<OTPAuthInfo> items)
+        {
+            if (_context?.CurrentPluginMetadata.PluginDirectory == null) throw new Exception("No plugin dir?");
+            string dataPath = Path.Combine(_context.CurrentPluginMetadata.PluginDirectory, "otps.json");
+
+            File.WriteAllText(dataPath, JsonSerializer.Serialize(items));
+        }
+
+        private List<OTPAuthInfo> GetOTPItemsFromStorage()
+        {
+            if (_context?.CurrentPluginMetadata.PluginDirectory == null) throw new Exception("No plugin dir?");
+            string dataPath = Path.Combine(_context.CurrentPluginMetadata.PluginDirectory, "otps.json");
+            string jsonFromFile = File.ReadAllText(dataPath);
+
+            List<OTPAuthInfo> deserializedAuthInfo = JsonSerializer.Deserialize<List<OTPAuthInfo>>(jsonFromFile) ?? throw new Exception("I have parsed shit!");
+            return deserializedAuthInfo;
+        }
 
         public List<ContextMenuResult> LoadContextMenus(Result selectedResult)
         {
+            if (selectedResult.Title.StartsWith("[+]")) return new List<ContextMenuResult>();
+
             return new List<ContextMenuResult>
             {
                 new()
                 {
-                    Title = "Run as administrator (Ctrl+Shift+Enter)",
-                    Glyph = "\xE7EF",
+                    Title = "Delete code (Ctrl+Shift+Enter)",
+                    Glyph = "\xE74D",
                     FontFamily = "Segoe Fluent Icons,Segoe MDL2 Assets",
                     AcceleratorKey = Key.Enter,
                     AcceleratorModifiers = ModifierKeys.Control | ModifierKeys.Shift,
                     PluginName = Name,
                     Action = _ =>
                     {
-                        Clipboard.SetHistoryItemAsContent((ClipboardHistoryItem)selectedResult.ContextData);
-                        Task.Run(() => RunAsSTAThread(() =>
-                        {
-                            Thread.Sleep(_beginTypeDelay);
-                            var foregroundWindow = GetForegroundWindow();
-                            Helper.OpenInShell(_pasterPath, runAs: Helper.ShellRunAsType.Administrator, runWithHiddenWindow: true);
-                            SetForegroundWindow(foregroundWindow);
-                        }));
-
+                        RemoveOTPItem((OTPAuthInfo)selectedResult.ContextData);
                         return true;
                     },
                 },
@@ -165,7 +263,10 @@ namespace Community.PowerToys.Run.Plugin.OTPaster
             }
 
             var typeDelay = settings.AdditionalOptions.FirstOrDefault(x => x.Key == "PasteDelay");
-            _beginTypeDelay = (int)(typeDelay?.NumberValue ?? 200);
+            _beginTypeDelay = Math.Clamp((int)(typeDelay?.NumberValue ?? 200), 100, 3000);
+
+            var remainingTime = settings.AdditionalOptions.FirstOrDefault(x => x.Key == "MinRemainingTime");
+            _minRemainingTime = Math.Clamp((int)(remainingTime?.NumberValue ?? 5), 2, 10) * 1000;
         }
 
         /// <summary>
@@ -184,11 +285,6 @@ namespace Community.PowerToys.Run.Plugin.OTPaster
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
             @event.WaitOne();
-        }
-
-        private T RunSync<T>(Func<Task<T>> func)
-        {
-            return Task.Run(func).GetAwaiter().GetResult();
         }
     }
 }

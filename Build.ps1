@@ -26,6 +26,8 @@ foreach ($platform in "ARM64", "x64")
     New-Item -ItemType Directory -Force -Path $releaseDirectory\Paster
     Copy-Item -Path $pasterReleaseDirectory\* -Destination $releaseDirectory\Paster -Recurse
     Rename-Item -Path $releaseDirectory -NewName "OTPaster"
+    
+    Write-Output $releaseDirectory
 
-    Compress-Archive -Path "$projectDirectory\bin\$platform\OTPaster" -DestinationPath "$PSScriptRoot\OTPaster-$version-$platform.zip"
+    Compress-Archive -Update -Path "$projectDirectory\bin\$platform\OTPaster" -DestinationPath "$PSScriptRoot\OTPaster-$version-$platform.zip"
 }
