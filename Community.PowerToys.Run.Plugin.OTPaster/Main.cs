@@ -154,7 +154,6 @@ namespace Community.PowerToys.Run.Plugin.OTPaster
                         Clipboard.SetText(TOTPGenerator.GenerateCode(item.Secret));
                         Thread.Sleep(_beginTypeDelay);
                         SendKeys.SendWait("^v");
-                        MessageBox.Show($"Code is {TOTPGenerator.GenerateCode(item.Secret)}", "Inserted!");
                     }));
                     return true;
                 },
