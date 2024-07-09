@@ -5,8 +5,6 @@ $projectDirectory = "$PSScriptRoot\Community.PowerToys.Run.Plugin.OTPaster"
 $version = $xml.Project.PropertyGroup.Version
 $version = "$version".Trim()
 
-$pasterReleaseDirectory = "$PSScriptRoot\Paster\bin\Release\net8.0-windows"
-
 foreach ($platform in "ARM64", "x64")
 {
     if (Test-Path -Path "$projectDirectory\bin")
@@ -23,11 +21,8 @@ foreach ($platform in "ARM64", "x64")
 
     $releaseDirectory = "$projectDirectory\bin\$platform\Release"
     Remove-Item -Path "$projectDirectory\bin\*" -Recurse -Include *.xml, *.pdb, PowerToys.*, Wox.*
-    New-Item -ItemType Directory -Force -Path $releaseDirectory\Paster
-    Copy-Item -Path $pasterReleaseDirectory\* -Destination $releaseDirectory\Paster -Recurse
+    New-Item -ItemType Directory -Force -Path $releaseDirectory
     Rename-Item -Path $releaseDirectory -NewName "OTPaster"
-    
-    Write-Output $releaseDirectory
 
     Compress-Archive -Update -Path "$projectDirectory\bin\$platform\OTPaster" -DestinationPath "$PSScriptRoot\OTPaster-$version-$platform.zip"
 }
