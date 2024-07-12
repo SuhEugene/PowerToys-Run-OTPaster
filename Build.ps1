@@ -21,7 +21,7 @@ dotnet restore
 
 foreach ($platform in $platforms)
 {
-    dotnet build --no-restore $projectDirectory.sln -c Release /p:Platform=$platform
+    dotnet build --no-restore $projectDirectory.sln -c Release /p:Platform=$platform /p:EnableWindowsTargeting=true
 
     $releaseDirectory = "$projectDirectory\bin\$platform\Release"
     Remove-Item -Path "$projectDirectory\bin\$platform" -Recurse -Include *.xml, *.pdb, PowerToys.*, Wox.*
