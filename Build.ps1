@@ -2,27 +2,31 @@ $ErrorActionPreference = "Stop"
 
 $projectDirectory = "$PSScriptRoot\Community.PowerToys.Run.Plugin.OTPaster"
 [xml]$xml = Get-Content -Path "$projectDirectory\Community.PowerToys.Run.Plugin.OTPaster.csproj"
-$version = $xml.Project.PropertyGroup.Version
-$version = "$version".Trim()
 
-foreach ($platform in "ARM64", "x64")
+$platforms = "ARM64", "x64"
+
+foreach ($platform in $platforms)
 {
-    if (Test-Path -Path "$projectDirectory\bin")
+    if (Test-Path -Path "$projectDirectory\bin\$platform")
     {
-        Remove-Item -Path "$projectDirectory\bin\*" -Recurse
+        Remove-Item -Path "$projectDirectory\bin\$platform" -Recurse
     }
-
-    if (Test-Path -Path "$projectDirectory\obj")
+    if (Test-Path -Path "$projectDirectory\obj\$platform")
     {
-        Remove-Item -Path "$projectDirectory\obj\*" -Recurse
+        Remove-Item -Path "$projectDirectory\obj\$platform" -Recurse
     }
+}
 
-    dotnet build $projectDirectory.sln -c Release /p:Platform=$platform
+dotnet restore
+
+foreach ($platform in $platforms)
+{
+    dotnet build --no-restore $projectDirectory.sln -c Release /p:Platform=$platform
 
     $releaseDirectory = "$projectDirectory\bin\$platform\Release"
-    Remove-Item -Path "$projectDirectory\bin\*" -Recurse -Include *.xml, *.pdb, PowerToys.*, Wox.*
+    Remove-Item -Path "$projectDirectory\bin\$platform" -Recurse -Include *.xml, *.pdb, PowerToys.*, Wox.*
     New-Item -ItemType Directory -Force -Path $releaseDirectory
     Rename-Item -Path $releaseDirectory -NewName "OTPaster"
 
-    Compress-Archive -Update -Path "$projectDirectory\bin\$platform\OTPaster" -DestinationPath "$PSScriptRoot\OTPaster-$version-$platform.zip"
+    Compress-Archive -Update -Path "$projectDirectory\bin\$platform\OTPaster" -DestinationPath "$PSScriptRoot\OTPaster-$platform.zip"
 }
