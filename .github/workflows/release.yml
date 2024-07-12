@@ -24,11 +24,6 @@ jobs:
         shell: pwsh
         run: pwsh -File Build.ps1
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
