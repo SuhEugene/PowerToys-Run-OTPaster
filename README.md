@@ -1,24 +1,29 @@
 # PowerToys Run: OTPaster plugin
 
-Simple [PowerToys Run](https://learn.microsoft.com/windows/powertoys/run) plugin for easily searching and pasting the clipboard history.
-
-![OTPaster Demonstration](/images/OTPaster.gif)
+Simple [PowerToys Run](https://learn.microsoft.com/windows/powertoys/run) plugin for easily storing TOTP secrets and pasting TOTP codes.
 
 ## Requirements
 
 - PowerToys minimum version 0.77.0
-- Windows Clipboard History enabled `Windows key + V`
 
 ## Installation
 
-- Download the [latest release](https://github.com/CoreyHayward/PowerToys-Run-OTPaster/releases/) by selecting the architecture that matches your machine: `x64` (more common) or `ARM64`
+- Download the [latest release](https://github.com/SuhEugene/PowerToys-Run-OTPaster/releases/) by selecting the architecture that matches your machine: `x64` (more common) or `ARM64`
 - Close PowerToys
 - Extract the archive to `%LOCALAPPDATA%\Microsoft\PowerToys\PowerToys Run\Plugins`
 - Open PowerToys
 
 ## Usage
-- Select/Place cursor where text should be pasted 
+
+### Insert code
+- Place cursor where text should be pasted 
 - Open PowerToys Run
-- Input: "c: <search query>"
+- Input: `% <service name>`
 - Select the result (ENTER)
-- \<text\> is pasted into the selected location
+- Code is pasted into the selected location
+
+### Add service
+- Copy the string containing OTP authorization data, it starts with `otpauth://totp/`
+- Input `% otpauth://totp/...`
+- Choose "Create OTP account"
+- Now it's in the list
