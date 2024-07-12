@@ -204,6 +204,13 @@ namespace Community.PowerToys.Run.Plugin.OTPaster
         {
             if (_context?.CurrentPluginMetadata.PluginDirectory == null) throw new Exception("No plugin dir?");
             string dataPath = Path.Combine(_context.CurrentPluginMetadata.PluginDirectory, "otps.json");
+
+            if (!File.Exists(dataPath))
+            {
+                File.WriteAllText(dataPath, "[]");
+                return [];
+            }
+
             string jsonFromFile = File.ReadAllText(dataPath);
 
             List<OTPAuthInfo> deserializedAuthInfo = JsonSerializer.Deserialize<List<OTPAuthInfo>>(jsonFromFile) ?? throw new Exception("I have parsed shit!");
