@@ -17,7 +17,7 @@ foreach ($platform in $platforms)
     }
 }
 
-dotnet restore
+dotnet restore /p:EnableWindowsTargeting=true
 
 foreach ($platform in $platforms)
 {
