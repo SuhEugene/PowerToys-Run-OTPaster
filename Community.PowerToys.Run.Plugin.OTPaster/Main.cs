@@ -151,9 +151,10 @@ namespace Community.PowerToys.Run.Plugin.OTPaster
                         if (_beginTypeDelay + _minRemainingTime > timeLeft)
                             Thread.Sleep(timeLeft);
 
-                        Clipboard.SetText(TOTPGenerator.GenerateCode(item.Secret));
+                        var code = TOTPGenerator.GenerateCode(item.Secret);
+                        Clipboard.SetText(code);
                         Thread.Sleep(_beginTypeDelay);
-                        SendKeys.SendWait("^v");
+                        SendKeys.SendWait(code);
                     }));
                     return true;
                 },
